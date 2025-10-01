@@ -7,6 +7,7 @@ find_package(OpenGL REQUIRED)
 find_package(glm CONFIG REQUIRED)
 
 add_library(GLAD "lib/glad.c")
+add_library(STB_IMAGE "lib/stb_image.cpp")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
@@ -33,6 +34,7 @@ target_link_libraries(LearnOpenGL
         glfw
         OpenGL::GL
         GLAD
+        STB_IMAGE
     PRIVATE
         glm::glm-header-only
 )

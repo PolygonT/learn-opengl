@@ -3,8 +3,9 @@ out vec4 FragColor;
 
 in vec3 FragPos;
 in vec3 Normal;
-  
+
 uniform vec3 lightPos;
+uniform vec3 camPos;
 uniform vec3 lightColor;
 uniform vec3 objectColor;
 
@@ -19,7 +20,12 @@ void main()
     float diff = max(dot(norm, lightdir), 0.0);
     vec3 diffuse =  diff * lightColor;
 
-    vec3 result = (ambient + diffuse) * objectColor;
-    // vec3 result = ambient * objectColor;
+    vec3 eyedir = normalize(camPos - FragPos);
+    vec3 halfdir = normalize(lightdir + eyedir);
+
+    float spec = pow(max(dot(halfdir, norm), 0.0), 240);
+    vec3 specular = 0.5 * spec * lightColor;
+
+    vec3 result = (ambient + diffuse + specular) * objectColor;
     FragColor = vec4(result, 1.0);
 }
