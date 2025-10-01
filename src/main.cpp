@@ -34,6 +34,7 @@ float lastFrame = 0.0f;
 // lighting
 glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
+glm::vec4 directionalLightDir(-0.2f, -1.0f, -0.3f, 0.0);
 
 int main()
 {
@@ -129,6 +130,19 @@ int main()
         -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  0.0f,
         -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
     };
+    // positions all containers
+    glm::vec3 cubePositions[] = {
+        glm::vec3( 0.0f,  0.0f,  0.0f),
+        glm::vec3( 2.0f,  5.0f, -15.0f),
+        glm::vec3(-1.5f, -2.2f, -2.5f),
+        glm::vec3(-3.8f, -2.0f, -12.3f),
+        glm::vec3( 2.4f, -0.4f, -3.5f),
+        glm::vec3(-1.7f,  3.0f, -7.5f),
+        glm::vec3( 1.3f, -2.0f, -2.5f),
+        glm::vec3( 1.5f,  2.0f, -2.5f),
+        glm::vec3( 1.5f,  0.2f, -1.5f),
+        glm::vec3(-1.3f,  1.0f, -1.5f)
+    };
     // first, configure the cube's VAO (and VBO)
     unsigned int VBO, cubeVAO;
     glGenVertexArrays(1, &cubeVAO);
@@ -199,6 +213,9 @@ int main()
         // lightColor.x = sin(currentFrame * 2.0f);
         // lightColor.y = sin(currentFrame * 0.7f);
         // lightColor.z = sin(currentFrame * 1.3f);
+        // directional light绕x轴旋转
+        // glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(10.0f * deltaTime), glm::vec3(-1.0, 0.0, 0.0));
+        // directionalLightDir = rotationMatrix * directionalLightDir;
 
         glm::vec3 diffuseColor = lightColor   * glm::vec3(0.5f); 
         glm::vec3 ambientColor = diffuseColor * glm::vec3(0.2f);
@@ -212,11 +229,32 @@ int main()
         // lightingShader.setVec3("material.diffuse", 0.75164f, 0.60648f, 0.22648f);
         // lightingShader.setVec3("material.specular", 0.628281f, 0.555802f, 0.366065f);
         lightingShader.setFloat("material.shininess", 64.0f);
-        lightingShader.setVec3("light.ambient", ambientColor);
-        lightingShader.setVec3("light.diffuse", diffuseColor); // darken diffuse light a bit
-        lightingShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
-        lightingShader.setVec3("light.position", lightPos);
+
+        // point light
+        lightingShader.setVec3("pointLight.ambient", ambientColor);
+        lightingShader.setVec3("pointLight.diffuse", diffuseColor); // darken diffuse light a bit
+        lightingShader.setVec3("pointLight.specular", 1.0f, 1.0f, 1.0f);
+        lightingShader.setVec3("pointLight.position", lightPos);
+        lightingShader.setFloat("pointLight.constant",  1.0f);
+        lightingShader.setFloat("pointLight.linear",    0.09f);
+        lightingShader.setFloat("pointLight.quadratic", 0.032f);
         lightingShader.setFloat("time", currentFrame);
+        // directional light
+        lightingShader.setVec3("dirLight.direction", glm::vec3(directionalLightDir));
+        lightingShader.setVec3("dirLight.ambient", ambientColor);
+        lightingShader.setVec3("dirLight.diffuse", diffuseColor);
+        lightingShader.setVec3("dirLight.specular", 1.0f, 1.0f, 1.0f);
+        // spot light
+        lightingShader.setVec3("spotLight.direction", camera.Front);
+        lightingShader.setVec3("spotLight.position", camera.Position);
+        lightingShader.setFloat("spotLight.innerCutOff", glm::cos(glm::radians(12.5f)));
+        lightingShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(27.5f)));
+        lightingShader.setVec3("spotLight.ambient", ambientColor);
+        lightingShader.setVec3("spotLight.diffuse", diffuseColor);
+        lightingShader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+        lightingShader.setFloat("spotLight.constant",  1.0f);
+        lightingShader.setFloat("spotLight.linear",    0.09f);
+        lightingShader.setFloat("spotLight.quadratic", 0.032f);
 
         // view/projection transformations
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
@@ -241,7 +279,17 @@ int main()
 
         // render the cube
         glBindVertexArray(cubeVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        for (unsigned int i = 0; i < 10; i++)
+        {
+            // calculate the model matrix for each object and pass it to shader before drawing
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::translate(model, cubePositions[i]);
+            float angle = 20.0f * i;
+            model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+            lightingShader.setMat4("model", model);
+
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
 
 
         // also draw the lamp object

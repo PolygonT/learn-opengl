@@ -16,8 +16,8 @@ void main()
 {
     vec4 FragPos4 = model * vec4(aPos, 1.0);
     FragPos = vec3(FragPos4);
-    // TODO if have non-uniform scale, shoule multi normal matrix
-    Normal = aNormal;
+    //if have non-uniform scale, shoule multi normal matrix
+    Normal = mat3(transpose(inverse(model))) * aNormal;
     TexCoords = aTexCoords;
     
 
