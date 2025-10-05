@@ -83,6 +83,7 @@ int main()
     // load models
     // -----------
     Model ourModel("res/model/wall.glb");
+    // Model grass("res/model/grass.glb");
 
     glEnable(GL_STENCIL_TEST);
     

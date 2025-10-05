@@ -1,5 +1,6 @@
 .cache
 build/
+build_linux/
 CMakeCache.txt
 CMakeFiles/
 compile_commands.json

@@ -5,7 +5,7 @@ project(learn-opengl)
 find_package(glfw3 REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(glm CONFIG REQUIRED)
-find_package(assimp REQUIRED)
+find_package(assimp CONFIG REQUIRED)
 
 add_library(GLAD "lib/glad.c")
 add_library(STB_IMAGE "lib/stb_image.cpp")
@@ -15,7 +15,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # ===============source files=================
-file(GLOB_RECURSE ALL_SOURCE_FILES src/*.cpp src/*.h)
+file(GLOB_RECURSE ALL_SOURCE_FILES src/*.cpp src/*.h lib/*.c)
 
 # ===============source dirs==================
 file(GLOB_RECURSE ALL_ITEMS LIST_DIRECTORIES true "src/*")
@@ -36,9 +36,9 @@ target_link_libraries(LearnOpenGL
         OpenGL::GL
         GLAD
         STB_IMAGE
-        assimp
     PRIVATE
         glm::glm-header-only
+        assimp::assimp
 )
 
 target_include_directories(LearnOpenGL 
