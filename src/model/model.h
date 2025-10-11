@@ -132,8 +132,6 @@ private:
             resMat[0][2] = parentMatrix.c1; resMat[1][2] = parentMatrix.c2; resMat[2][2] = parentMatrix.c3; resMat[3][2] = parentMatrix.c4;
             resMat[0][3] = parentMatrix.d1; resMat[1][3] = parentMatrix.d2; resMat[2][3] = parentMatrix.d3; resMat[3][3] = parentMatrix.d4;
             resMesh.setupMeshMatrix(resMat);
-            printAiMat4(parentMatrix);
-            printGlmMat4(resMat);
             meshes.push_back(resMesh);
         }
         // after we've processed all of the meshes (if any) we then recursively process each of the children nodes
@@ -236,7 +234,7 @@ private:
         vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular", scene);
         textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
         // 3. normal maps
-        std::vector<Texture> normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal", scene);
+        std::vector<Texture> normalMaps = loadMaterialTextures(material, aiTextureType_NORMALS, "texture_normal", scene);
         textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
         // 4. height maps
         std::vector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height", scene);

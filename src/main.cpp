@@ -6,9 +6,11 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <stb_image.h>
 
+#include "portal.h"
+#include "renderer.h"
 #include "shader_m.h"
-#include "camera.h"
 #include "model.h"
+#include "skybox.h"
 
 #include <iostream>
 
@@ -22,7 +24,7 @@ const unsigned int SCR_WIDTH = 1280;
 const unsigned int SCR_HEIGHT = 960;
 
 // camera
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+Camera camera {glm::vec3(0.0f, 0.0f, 3.0f)};
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -72,23 +74,34 @@ int main()
     // tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
     // stbi_set_flip_vertically_on_load(true);
 
-    // configure global opengl state
-    // -----------------------------
-
-    // build and compile shaders
-    // -------------------------
-    Shader ourShader("res/shader/model_loading.vert", "res/shader/model_loading.frag");
-    Shader outlineShader("res/shader/outline.vert", "res/shader/outline.frag");
-
-    // load models
-    // -----------
-    Model ourModel("res/model/wall.glb");
-    // Model grass("res/model/grass.glb");
-
-    glEnable(GL_STENCIL_TEST);
+    Renderer renderer {camera};
     
     // draw in wireframe
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+    // framebuffer configuration
+    // -------------------------
+
+    unsigned int framebuffer;
+    glGenFramebuffers(1, &framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+    // create a color attachment texture
+    unsigned int textureColorbuffer;
+    glGenTextures(1, &textureColorbuffer);
+    glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer, 0);
+    // create a renderbuffer object for depth and stencil attachment (we won't be sampling these)
+    unsigned int rbo;
+    glGenRenderbuffers(1, &rbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT); // use a single renderbuffer object for both a depth AND stencil buffer.
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo); // now actually attach it
+    // now that we actually created the framebuffer and added all attachments we want to check if it is actually complete now
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << endl;
 
     // render loop
     // -----------
@@ -106,45 +119,22 @@ int main()
 
         // render
         // ------
-        glEnable(GL_DEPTH_TEST);
-        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
-        glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+        // glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+        // glStencilMask(0x00); 
+        // glDisable(GL_DEPTH_TEST);
+        // outlineShader.use(); 
+        // model = glm::scale(model, glm::vec3(1.1f, 1.1f, 1.1f));
+        // glStencilMask(0xFF);
+        // outlineShader.setMat4("projection", projection);
+        // outlineShader.setMat4("view", view);
+        // outlineShader.setMat4("model", model);
+        // ourModel.Draw(outlineShader);
+        // glStencilFunc(GL_ALWAYS, 1, 0xFF);   
+        // glEnable(GL_DEPTH_TEST);
 
-        // don't forget to enable shader before setting uniforms
-        ourShader.use();
-
-        // view/projection transformations
-        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-        glm::mat4 view = camera.GetViewMatrix();
-        ourShader.setMat4("projection", projection);
-        ourShader.setMat4("view", view);
-
-        // render the loaded model
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
-        ourShader.setMat4("model", model);
-
-
-
-        glStencilFunc(GL_ALWAYS, 1, 0xFF); 
-        glStencilMask(0xFF);
-        ourModel.Draw(ourShader);
-
-        glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-        glStencilMask(0x00); 
-        glDisable(GL_DEPTH_TEST);
-        outlineShader.use(); 
-        model = glm::scale(model, glm::vec3(1.1f, 1.1f, 1.1f));
-        glStencilMask(0xFF);
-        outlineShader.setMat4("projection", projection);
-        outlineShader.setMat4("view", view);
-        outlineShader.setMat4("model", model);
-        ourModel.Draw(outlineShader);
-        glStencilFunc(GL_ALWAYS, 1, 0xFF);   
-        glEnable(GL_DEPTH_TEST);
-
+        renderer.RenderFrameBuffer(framebuffer);
+        renderer.RenderScene(textureColorbuffer);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -154,6 +144,10 @@ int main()
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
+    // glDeleteRenderbuffers(1, &rbo);
+    // glDeleteFramebuffers(1, &framebuffer);
+    // TODO vao ebos delete ?
+
     glfwTerminate();
     return 0;
 }
